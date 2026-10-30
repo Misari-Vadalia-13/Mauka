@@ -1,4 +1,4 @@
-# Hackathon & Internship Tracker
+# Mauka: hackathons and internships that fit you
 
 > Find opportunities. See your fit. Stay ahead of deadlines.
 
