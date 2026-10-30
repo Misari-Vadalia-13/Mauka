@@ -124,4 +124,4 @@ To be decided. A `LICENSE` file will be added.
 
 ## Author
 
-Built by **[Your Name]** as a hands-on project to learn backend development, data collection and deployment.
+Built by **Misari** as a hands-on project to learn backend development, data collection and deployment.
