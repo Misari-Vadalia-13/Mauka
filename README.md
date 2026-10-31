@@ -1,127 +1,163 @@
-# Mauka: hackathons and internships that fit you
+# Mauka: Hackathons and internships that fit you
 
 > Find opportunities. See your fit. Stay ahead of deadlines.
 
-A web app that collects hackathons, contests and internships from multiple platforms into one feed, tells each student whether they are eligible, and sends reminders only for the opportunities they have saved.
+Mauka is a student-focused web app that brings hackathons, contests and internships from multiple platforms into one feed. It helps each student understand whether an opportunity fits their profile, keep track of deadlines, and receive reminders for opportunities they have saved.
 
-**Status:** 🚧 In development (initial commit). Nothing below is claimed as finished until its checkbox is ticked in the [Roadmap](#roadmap).
+**Status:** 🚧 In development. Features are planned unless their roadmap checkbox is marked as complete. No feature or performance metric is claimed as finished until it has been implemented and tested.
 
 ---
 
 ## The problem
 
-Opportunities for students are scattered across many platforms and group chats. Each platform has its own filters and alerts, but none of them looks across platforms, and none of them knows your situation: your year, your branch, your college's exam weeks, or what you have already applied to. The result is missed deadlines and time wasted on events you cannot enter.
+Opportunities for students are scattered across different platforms and group chats. Each platform has its own filters and alerts, but students still have to search across multiple sources and manually check whether they meet each opportunity's requirements.
 
-## What this project does
+Most platforms also do not know a student's college exam dates or which opportunities they have already saved. This can lead to missed deadlines and time spent reviewing opportunities for which a student may not be eligible.
 
-- Pulls listings from more than one platform on a schedule and merges duplicates
-- Shows an **eligibility verdict with a reason** for each listing (Eligible / Not eligible / Unclear)
-- Lets you save listings and get reminders only for those
-- Warns you when deadlines clash with each other or with your exam dates
+## What Mauka aims to do
+
+- Collect listings from multiple opportunity platforms into one feed.
+- Normalize listings and identify duplicates.
+- Show a per-student eligibility verdict with a reason: **Eligible**, **Not eligible** or **Unclear**.
+- Let students save opportunities and receive reminders for those saved listings.
+- Detect deadline clashes between saved opportunities and a student's exam dates.
 
 ## Features
 
-Planned features are listed here and tracked in the [Roadmap](#roadmap).
+The checkboxes below represent the current plan. They should be checked only after the feature is implemented and tested.
 
-**Core**
-- [ ] Collect listings from a first source and store them in a database
-- [ ] Add a second source and remove duplicate listings
-- [ ] Filter by type, mode (online/offline) and deadline
-- [ ] Save listings
-- [ ] Scheduled updates, with a "last updated" time on every listing
+### Core features
 
-**Signature**
-- [ ] Per-user eligibility verdict with a reason
-- [ ] Deadline clash detection (exam dates and other saved deadlines)
-- [ ] Telegram bot with reminders at 7 days, 2 days and 6 hours before a deadline
+- [ ] Collect listings from a first source and store them in a database.
+- [ ] Add a second source and identify duplicate listings.
+- [ ] Filter opportunities by type, mode (online/offline) and deadline.
+- [ ] Save opportunities.
+- [ ] Refresh listings on a schedule and show a last-updated timestamp.
 
-**Maybe later**
-- [ ] Flags for paid events or unverified organizers (heuristic only)
-- [ ] Application tracker (saved → registered → submitted → result)
-- [ ] Weekly "top 5 for you" digest
+### Signature features
+
+- [ ] Show a per-user eligibility verdict with a clear reason.
+- [ ] Detect deadline clashes with exam dates and other saved deadlines.
+- [ ] Send Telegram reminders for saved opportunities at 7 days, 2 days and 6 hours before the deadline.
+
+### Possible later features
+
+- [ ] Flag listings that appear to have registration fees or an unverified organizer. These flags will be presented as heuristics, not confirmed facts.
+- [ ] Track an application through stages: saved → registered → submitted → result.
+- [ ] Send a weekly digest of relevant opportunities.
 
 ## How it works
 
-```
-Sources (platform listings)
-        │  scheduled collection
-        ▼
-  Collector (Python)  ──►  Database
-                              │
-                              ▼
-                    API (FastAPI) ──► Web app (React)
-                              │
-                              └────► Telegram bot (reminders)
+```text
+Opportunity platforms
+        |
+        | scheduled collection
+        v
+Python collector  ----->  SQLite database
+                                |
+                                v
+                     Java backend (Spring Boot)
+                         /              \
+                        v                v
+                React web app      Telegram alerts
 ```
 
-1. **Collect:** a scheduled job fetches listings. It prefers an official API or the JSON a page already loads, and falls back to parsing HTML only if needed.
-2. **Normalise:** each listing is converted to one common format (title, type, mode, deadline, eligibility text, link, source).
-3. **Decide:** eligibility rules compare a listing to the user's profile and return a verdict with a reason. If the text is ambiguous, the verdict is "Unclear" rather than a guess.
-4. **Serve and notify:** the API feeds the web app and the Telegram bot.
+1. **Collect:** The Python collector retrieves opportunity information from a permitted source. It prefers an official API or an openly accessible structured data endpoint. HTML parsing is considered only when permitted and necessary.
+2. **Normalize:** Each listing is converted into a common format, such as title, type, mode, deadline, eligibility text, official link and source platform.
+3. **Store:** The normalized records are saved in the database. Duplicate detection will be added as more than one source is integrated.
+4. **Serve:** The Java Spring Boot backend exposes REST APIs for the React frontend and handles application logic such as filtering, saved listings and eligibility checks.
+5. **Notify:** Telegram integration sends reminders for opportunities a student has saved.
+
+If eligibility information is ambiguous or incomplete, Mauka should return **Unclear** rather than make an unsupported guess.
 
 ## Tech stack
 
-| Layer | Choice |
-|---|---|
-| Collection | Python (requests, BeautifulSoup; Playwright only if a source needs it) |
-| Backend | FastAPI |
-| Database | SQLite first, PostgreSQL if needed |
-| Frontend | React |
-| Alerts | Telegram bot |
-| Deployment | To be decided (Docker + a free cloud tier is the goal) |
+| Layer | Technology | Responsibility |
+|---|---|---|
+| Data collection | Python (`requests`; BeautifulSoup only if needed) | Retrieve and normalize opportunity listings |
+| Backend | Java + Spring Boot | REST APIs, application logic and eligibility rules |
+| Database | SQLite initially; PostgreSQL may be considered later | Store opportunities and user-related data |
+| Database access | Spring Data JPA / JDBC | Let the Java backend work with the database |
+| Frontend | React | Opportunity feed, filters and student dashboard |
+| Alerts | Telegram Bot API | Reminders for saved opportunities |
+| Version control | Git and GitHub | Track and manage project code |
+| Deployment | To be decided | Deployment will be planned after the first working version |
 
-## Project structure (planned)
+Python is used for the initial collector; Java Spring Boot is the main application backend. They are separate components with separate responsibilities.
 
-```
-.
-├── backend/        # API, database models, eligibility logic
-├── collector/      # scrapers / API clients, one module per source
-├── frontend/       # React app
-├── bot/            # Telegram bot
+## Planned project structure
+
+```text
+Mauka/
+├── backend/                 # Java Spring Boot application
+├── collector/               # Python collectors and data normalization
+├── frontend/                # React application
+├── data/                    # Local SQLite database during development
+├── docs/                    # Project notes and documentation
+├── .gitignore
 └── README.md
 ```
 
+The structure may grow as features are implemented. Generated environments, build output, database files containing local data and secret configuration must not be committed to GitHub.
+
 ## Getting started
 
-Setup steps will be added as each part is built. The intended flow is:
+Mauka is being developed in stages. Setup instructions will be expanded as each component is built. The first development milestone is the Python collector and local database.
 
-```bash
-# backend
-cd backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+### Prerequisites for Week 1
 
-# frontend
-cd frontend
-npm install
-npm run dev
+- Windows 11 (commands below use PowerShell).
+- Python installed and available through `py` or `python`.
+- Git (for version control; it can be initialized after the initial setup).
+
+### Set up the collector environment on Windows
+
+From the Mauka project root, run:
+
+```powershell
+cd collector
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
 ```
 
-Configuration (API keys, bot token) will go in a `.env` file. A `.env.example` will be provided and real secrets will never be committed.
+If the `py` command is unavailable, check the Python installation and PATH before continuing. If PowerShell blocks environment activation, use the process-scoped execution-policy workaround documented in the development notes rather than changing the machine-wide policy.
+
+The collector's dependency list will be recorded in `requirements.txt` as the collector is implemented. Install those dependencies with:
+
+```powershell
+pip install -r requirements.txt
+```
+
+### Backend and frontend setup
+
+The Java backend and React frontend will receive their setup instructions when those components are created. The planned backend uses a supported JDK, Spring Boot and Maven. The frontend uses Node.js and npm.
 
 ## Roadmap
 
-- [ ] **Week 1:** collect listings from one source into a database
-- [ ] **Week 2:** API with filtering and the first version of eligibility rules
-- [ ] **Week 3:** React frontend, scheduled updates, one alert channel, deployment
-- [ ] **After:** add a second source, then explore an LLM step for extracting details from messy descriptions, security hardening, and containerised deployment
+- [ ] **Week 1 — First data source:** inspect the permitted Unstop data access method, collect listings, normalize the records and store them in SQLite. Verify that records can be retrieved.
+- [ ] **Week 2 — Java backend:** create the Spring Boot application, connect it to the database, expose opportunity APIs, and implement initial filters and rule-based eligibility checks.
+- [ ] **Week 3 — React frontend:** build the opportunity feed and connect it to the Java APIs. Add scheduled collection and the first usable alert flow as the integration allows.
+- [ ] **After the first working version:** add a second source and deduplication, then improve eligibility extraction, deadline clash detection, Telegram reminders, testing, security and deployment.
+
+The roadmap is a learning plan, not a claim that these features are already available.
 
 ## Limitations and responsible use
 
-- **Data can be wrong or late.** Listings come from third-party pages that can change without notice. Always confirm details and deadlines on the official page before applying.
-- **Eligibility verdicts are automated.** They can be incorrect, which is why uncertain cases show "Unclear". Accuracy will be measured on a test set and reported here once available.
-- **Respect the sources.** Collection should follow each site's terms of service and robots.txt, use official APIs where they exist, and keep request rates low.
-- This project is independent and **not affiliated with or endorsed by** any platform it collects from.
+- **Listings can be outdated or incomplete.** Source pages may change, and collection may not capture every update. Students should confirm details and deadlines on the official opportunity page before applying.
+- **Eligibility verdicts can be wrong.** Automated checks will be tested against a manually reviewed sample. Ambiguous cases should be marked **Unclear**. Accuracy figures will be published only after testing.
+- **Collection must respect source rules.** Prefer official APIs and permitted public data. Check each platform's terms and applicable access rules, respect robots.txt as one signal, avoid authentication or access-control workarounds, and keep request rates low. Robots.txt alone does not grant permission to collect data.
+- **Heuristic flags are not guarantees.** Any paid-event or organizer-trust indicators added later will be labelled as signals that require user verification.
+- **Independent project.** Mauka is not affiliated with, endorsed by or operated by Unstop or any other platform listed by the service.
 
 ## Contributing
 
-This is a personal learning project and is not yet open for contributions. Ideas and bug reports are welcome as issues.
+Mauka is currently a personal learning project and is not yet open for outside contributions. Suggestions and bug reports are welcome through GitHub issues.
 
 ## License
 
-To be decided. A `LICENSE` file will be added.
+To be decided. A license will be added before the project is distributed for reuse.
 
 ## Author
 
-Built by **Misari** as a hands-on project to learn backend development, data collection and deployment.
+Built by **Misari** as a hands-on project to learn Java backend development, Python-based data collection, databases and frontend integration.
